@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DİKAB Etkinlikleri — Oyunlar Index</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#60a5fa}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial; margin:0;background:linear-gradient(180deg,#071021 0%,#0b1220 100%);color:#e6eef8;min-height:100vh}
+    header{padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;gap:16px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;background:linear-gradient(135deg,#2563eb,#06b6d4);display:grid;place-items:center;border-radius:10px;font-weight:700}
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .search{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;padding:24px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:10px}
+    .thumb{height:120px;border-radius:8px;background:linear-gradient(90deg,#111827,#0b1220);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+    .title{font-weight:600}
+    .meta{font-size:12px;color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center}
+    .btn{padding:8px 10px;border-radius:8px;border:none;background:var(--accent);color:#07203b;cursor:pointer}
+    .small{padding:6px 8px;font-size:13px}
+    .add-form{padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);margin:18px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=text]{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+    .hint{font-size:12px;color:var(--muted)}
+    footer{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+    @media(max-width:600px){header{flex-wrap:wrap}.controls{width:100%;order:3}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">D</div>
+      <div>
+        <h1>DİKAB Etkinlikleri — Oyunlar</h1>
+        <p class="lead">Hazırladığın tüm oyunları buraya ekle; öğrenci ve meslektaşların kolayca erişsin.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <input id="search" class="search" placeholder="Oyun ara... (başlık veya etiket)" />
+      <button id="newBtn" class="btn small">Yeni Oyun Ekle</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="add-form" id="formWrap" style="display:none;">
+      <h3>Yeni Oyun Ekle</h3>
+      <label>Başlık <input id="gameTitle" type="text" placeholder="Örn: İsim-Ülke Eşleştirme"/></label>
+      <label>Dosya / Link <input id="gameLink" type="text" placeholder="Örn: games/isim-ulke/index.html veya https://..."/></label>
+      <label>Kısa Açıklama <input id="gameDesc" type="text" placeholder="Örn: 4-8. sınıflar için eşleştirme oyunu"/></label>
+      <label>Etiketler (virgülle ayır)</label>
+      <input id="gameTags" type="text" placeholder="örn: eşleştirme,3.sınıf,interaktif"/>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button id="saveGame" class="btn">Kaydet</button>
+        <button id="cancelGame" class="small" style="background:transparent;border:1px solid rgba(255,255,255,0.03);">İptal</button>
+      </div>
+      <p class="hint">Kaydettiğinde oyun listeye eklenir ve tarayıcıya kayıtlı kalır. HTML dosyalarını aynı dizine koyarsan bağlantı çalışır.</p>
+    </section>
+
+    <section class="grid" id="gamesGrid">
+      <!-- Oyun kartları burada JS ile yüklenecek -->
+    </section>
+  </main>
+
+  <footer>
+    Bu sayfa yerel olarak çalışır. GitHub Pages ile yayınlamak istersen repoya yükleyip Settings -> Pages bölümünden etkinleştir.
+  </footer>
+
+  <script>
+    // Basit oyun listesi yönetimi (localStorage)
+    const STORAGE_KEY = 'dikab_games_v1';
+    const gamesGrid = document.getElementById('gamesGrid');
+    const formWrap = document.getElementById('formWrap');
+    const newBtn = document.getElementById('newBtn');
+    const saveBtn = document.getElementById('saveGame');
+    const cancelBtn = document.getElementById('cancelGame');
+    const searchInput = document.getElementById('search');
+
+    function loadGames(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      try{ return raw? JSON.parse(raw): defaultGames(); } catch(e){ return defaultGames(); }
+    }
+    function saveGames(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+    function defaultGames(){
+      // Örnek başlangıç kartı (kaldırabilirsiniz)
+      return [
+        {id:1,title:'Örnek Oyun: Kelime Eşleştirme',link:'games/ornek-kelime/index.html',desc:'Örnek oyun. Kendi oyun dosyalarını /games klasörüne koyun.',tags:['özgün','örnek']}
+      ];
+    }
+
+    function render(list){
+      gamesGrid.innerHTML = '';
+      if(!list.length){ gamesGrid.innerHTML='<p style="color:var(--muted);padding:20px">Henüz oyun eklenmemiş. "Yeni Oyun Ekle" ile başlayın.</p>'; return }
+      list.forEach(g=>{
+        const card = document.createElement('article'); card.className='card';
+        card.innerHTML = `
+          <div class="thumb">${escapeHtml(g.title)}</div>
+          <div>
+            <div class="title">${escapeHtml(g.title)}</div>
+            <div class="meta">${escapeHtml(g.desc || '')}</div>
+            <div class="row" style="margin-top:8px;justify-content:space-between;">
+              <div style="font-size:12px;color:var(--muted)">${(g.tags||[]).map(t=>'<span style="margin-right:6px">#'+escapeHtml(t.trim())+'</span>').join('')}</div>
+              <div style="display:flex;gap:6px">
+                <a class="small" href="${escapeAttr(g.link)}" target="_blank" rel="noopener noreferrer" style="background:transparent;border:1px solid rgba(255,255,255,0.04);">Aç</a>
+                <button class="small" onclick="removeGame(${g.id})">Sil</button>
+              </div>
+            </div>
+          </div>
+        `;
+        gamesGrid.appendChild(card);
+      })
+    }
+
+    function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+    function escapeAttr(s){ return (s||'').replaceAll('"','%22'); }
+
+    function addGame(obj){
+      const list = loadGames();
+      obj.id = Date.now();
+      list.unshift(obj);
+      saveGames(list);
+      render(list);
+    }
+
+    function removeGame(id){
+      if(!confirm('Bu oyunu silmek istediğine emin misin?')) return;
+      const list = loadGames().filter(g=>g.id!==id);
+      saveGames(list); render(list);
+    }
+
+    // Eventler
+    newBtn.addEventListener('click',()=>{ formWrap.style.display='block'; window.scrollTo({top:formWrap.offsetTop,behavior:'smooth'}) });
+    cancelBtn.addEventListener('click',()=>{ formWrap.style.display='none' });
+    saveBtn.addEventListener('click',()=>{
+      const t=document.getElementById('gameTitle').value.trim();
+      const l=document.getElementById('gameLink').value.trim();
+      const d=document.getElementById('gameDesc').value.trim();
+      const tags=document.getElementById('gameTags').value.split(',').map(x=>x.trim()).filter(Boolean);
+      if(!t||!l){ alert('Başlık ve link gerekli.'); return }
+      addGame({title:t,link:l,desc:d,tags:tags});
+      document.getElementById('gameTitle').value='';document.getElementById('gameLink').value='';document.getElementById('gameDesc').value='';document.getElementById('gameTags').value='';
+      formWrap.style.display='none';
+    });
+
+    searchInput.addEventListener('input',()=>{
+      const q = searchInput.value.toLowerCase();
+      const list = loadGames().filter(g=> (g.title+ ' '+ (g.desc||'') + ' '+ (g.tags||[]).join(' ')).toLowerCase().includes(q));
+      render(list);
+    })
+
+    // İlk render
+    render(loadGames());
+
+    // Expose removeGame to global scope for inline onclick
+    window.removeGame = removeGame;
+  </script>
+
+  <!--
+    KULLANIM NOTLARI:
+    1) Bu dosyayı "index.html" olarak kaydet ve oyun dosyalarını (ör. oyun1/index.html) projende "games/" gibi alt klasörlere koy.
+    2) Yeni bir oyun eklemek için sayfadaki "Yeni Oyun Ekle" butonunu kullan veya direkt HTML içine başlangıç listesine kart ekle.
+       Eğer manuel eklersen, defaultGames() fonksiyonuna örnek ek olarak ekleyebilirsin.
+    3) GitHub'a yüklemek için:
+       - Yeni bir repository oluştur, ardından bu index.html ve games klasörünü repoya yükle.
+       - GitHub Pages ile yayınlamak istersen Settings -> Pages bölümünden main branch / root seçeneğini etkinleştir.
+    4) Yardım istersen ben: repo düzenleme, Git/GitHub adımları veya sayfayı özelleştirme konusunda adım adım yardımcı olurum.
+  -->
+</body>
+</html>
